@@ -9,7 +9,8 @@ local language_mappings = {
     es = { "spanish", "español", "es", "es_es", "es_mx", "es_ar", "es_co", "es-es", "es-mx" },
     fr = { "french", "français", "francais", "fr", "fr_fr", "fr_ca", "fr_be", "fr_ch", "fr-fr", "fr-ca" },
     de = { "german", "deutsch", "de", "de_de", "de_at", "de_ch", "de-de", "de-at" },
-    tr = { "turkish", "türkçe", "turkce", "tr", "tr_tr", "tr-tr" }
+    tr = { "turkish", "türkçe", "turkce", "tr", "tr_tr", "tr-tr" },
+    ru = { "russian", "русский", "ru", "ru_ru", "ru-ru" },
 }
 
 -- Build the lookup table once at initialization
@@ -247,6 +248,68 @@ local TurkishLanguage = {
     end
 }
 
+-- Russian language module
+local RussianLanguage = {
+    stop_words = {
+        "и", "в", "во", "не", "что", "он", "на", "я", "с", "со", "как", "а", "то",
+        "все", "она", "так", "его", "но", "да", "ты", "к", "у", "же", "вы", "за",
+        "бы", "по", "только", "ее", "мне", "было", "вот", "от", "меня", "еще",
+        "нет", "о", "из", "ему", "теперь", "когда", "даже", "ну", "вдруг",
+        "ли", "если", "уже", "или", "ни", "быть", "был", "него", "до", "вас",
+        "нибудь", "опять", "уж", "вам", "ведь", "там", "потом", "себя", "ничего",
+        "ей", "может", "они", "тут", "где", "есть", "надо", "ней", "для",
+        "мы", "тебя", "их", "чем", "была", "сам", "чтоб", "без", "будто"
+    },
+    sentence_delimiters = { ".", "!", "?", ";" },
+    min_sentence_length = 10,
+    min_word_length = 2,
+
+    -- Uppercase Cyrillic letters
+    entity_pattern = "^[А-Я]",
+
+    -- Simple stemming patterns (Russian suffix removal)
+    stemming_patterns = {
+        { pattern = "ами$", replacement = "" },
+        { pattern = "ями$", replacement = "" },
+        { pattern = "ами$", replacement = "" },
+        { pattern = "ях$", replacement = "" },
+        { pattern = "ев$", replacement = "" },
+        { pattern = "ов$", replacement = "" },
+        { pattern = "ем$", replacement = "" },
+        { pattern = "ом$", replacement = "" },
+        { pattern = "ий$", replacement = "" },
+        { pattern = "ый$", replacement = "" },
+        { pattern = "ие$", replacement = "" },
+        { pattern = "ые$", replacement = "" },
+        { pattern = "ую$", replacement = "" },
+        { pattern = "юю$", replacement = "" },
+        { pattern = "ая$", replacement = "" },
+        { pattern = "ой$", replacement = "" },
+        { pattern = "ее$", replacement = "" },
+        { pattern = "ие$", replacement = "" },
+        { pattern = "ые$", replacement = "" },
+        { pattern = "ь$", replacement = "" },
+        { pattern = "ы$", replacement = "" },
+        { pattern = "а$", replacement = "" },
+        { pattern = "я$", replacement = "" },
+        { pattern = "о$", replacement = "" },
+        { pattern = "е$", replacement = "" }
+    },
+
+    tokenize_words = function(self, sentence)
+        if not sentence then return {} end
+        local words = {}
+        -- Cyrillic lowercase/uppercase included
+        for word in sentence:gmatch("[%w%%абвгдеёжзийклмнопрстуфхцчшщъыьэюяАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ]+") do
+            local clean_word = word:lower()
+            if #clean_word >= self.min_word_length and not self.stop_words_set[clean_word] then
+                table.insert(words, clean_word)
+            end
+        end
+        return words
+    end
+}
+
 -- Convert stop words arrays to hash sets for O(1) lookup
 local function prepare_language_module(module)
     if not module.stop_words_set then
@@ -264,7 +327,8 @@ local language_registry = {
     ["es"] = SpanishLanguage,
     ["fr"] = FrenchLanguage,
     ["de"] = GermanLanguage,
-    ["tr"] = TurkishLanguage
+    ["tr"] = TurkishLanguage,
+    ["ru"] = RussianLanguage
 }
 
 -- Apply stemming patterns to a word for fuzzy matching
